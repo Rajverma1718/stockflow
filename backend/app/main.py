@@ -196,7 +196,10 @@ def update_product(product_id: int, item: ProductPatchIn, authorization: Optiona
 def delete_product(product_id: int, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     user = require_role({"ADMIN"}, authorization, session); obj = session.get(Product, product_id)
     if not obj: raise HTTPException(404, "Product not found")
-    if session.scalar(select(StockLevel).where(StockLevel.product_id == product_id)): raise HTTPException(409, "Cannot delete a product with inventory")
+    stock_rows = session.scalars(select(StockLevel).where(StockLevel.product_id == product_id)).all()
+    if any(row.quantity > 0 or row.reserved > 0 for row in stock_rows):
+        raise HTTPException(409, "Cannot delete a product with inventory")
+    for row in stock_rows: session.delete(row)
     session.delete(obj); audit(session, user, "DELETE", "Product", str(product_id)); session.commit(); return {"message": "Product deleted"}
 
 @app.post("/api/stock")
