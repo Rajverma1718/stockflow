@@ -387,6 +387,7 @@ def add_po_item(po_id: int, item: POItemIn, authorization: Optional[str] = Heade
     user = require_role({"ADMIN", "MANAGER", "PROCUREMENT"}, authorization, session)
     po = session.get(PurchaseOrder, po_id)
     if not po or not session.get(Product, item.product_id): raise HTTPException(404, "Purchase order or product not found")
+    if po.status != "PENDING_APPROVAL": raise HTTPException(409, "Items can only be added while a purchase order is pending approval")
     if item.quantity <= 0 or item.unit_cost <= 0: raise HTTPException(400, "Quantity and unit cost must be positive")
     line = PurchaseOrderItem(purchase_order_id=po_id, product_id=item.product_id, quantity=item.quantity, unit_cost=item.unit_cost)
     session.add(line); po.total += item.quantity * item.unit_cost; audit(session, user, "ADD_ITEM", "PurchaseOrder", str(po_id)); session.commit(); session.refresh(line); return {"id": line.id, "purchase_order_id": po_id, "product_id": item.product_id, "quantity": item.quantity, "unit_cost": item.unit_cost}
