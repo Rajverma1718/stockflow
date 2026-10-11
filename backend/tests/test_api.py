@@ -49,6 +49,11 @@ def test_purchase_order_line_and_receiving_flow():
     assert po.status_code == 200
     line = client.post(f"/api/purchase-orders/{po.json()['id']}/items", json={"product_id": 1, "quantity": 2, "unit_cost": 10}, headers=headers)
     assert line.status_code == 200
+    blocked = client.post(f"/api/purchase-orders/{po.json()['id']}/receive", json={"item_id": line.json()["id"], "quantity": 2}, headers=headers)
+    assert blocked.status_code == 409
+    approved = client.patch(f"/api/purchase-orders/{po.json()['id']}/approve", headers=headers)
+    assert approved.status_code == 200
     received = client.post(f"/api/purchase-orders/{po.json()['id']}/receive", json={"item_id": line.json()["id"], "quantity": 2}, headers=headers)
     assert received.status_code == 200
     assert received.json()["status"] == "RECEIVED"
+

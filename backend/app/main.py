@@ -399,6 +399,7 @@ def po_items(po_id: int, session: Session = Depends(db)):
 def receive_po(po_id: int, item: ReceiveIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     user = require_role({"ADMIN", "MANAGER"}, authorization, session); po = session.get(PurchaseOrder, po_id); line = session.get(PurchaseOrderItem, item.item_id)
     if not po or not line or line.purchase_order_id != po_id: raise HTTPException(404, "Purchase order item not found")
+    if po.status != "APPROVED": raise HTTPException(409, "Purchase order must be approved before receiving goods")
     if item.quantity <= 0 or line.received_quantity + item.quantity > line.quantity: raise HTTPException(400, "Received quantity exceeds ordered quantity")
     stock = session.scalar(select(StockLevel).where(StockLevel.product_id == line.product_id, StockLevel.warehouse_id == po.warehouse_id))
     if not stock: stock = StockLevel(product_id=line.product_id, warehouse_id=po.warehouse_id, quantity=0, reserved=0); session.add(stock); session.flush()
@@ -461,3 +462,4 @@ def generate_alerts(session: Session = Depends(db)):
 def audit_logs(authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     require_role({"ADMIN", "MANAGER"}, authorization, session)
     return session.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(200)).all()
+
