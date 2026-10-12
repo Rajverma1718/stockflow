@@ -248,6 +248,7 @@ def approve_po(po_id: int, authorization: Optional[str] = Header(None), session:
     require_role({"ADMIN", "MANAGER"}, authorization, session)
     obj = session.get(PurchaseOrder, po_id)
     if not obj: raise HTTPException(404, "Purchase order not found")
+    if obj.status != "PENDING_APPROVAL": raise HTTPException(409, "Only pending purchase orders can be approved")
     obj.status = "APPROVED"; session.commit(); session.refresh(obj)
     return {"id": obj.id, "status": obj.status, "message": "Purchase order approved"}
 
@@ -256,6 +257,7 @@ def reject_po(po_id: int, authorization: Optional[str] = Header(None), session: 
     require_role({"ADMIN", "MANAGER"}, authorization, session)
     obj = session.get(PurchaseOrder, po_id)
     if not obj: raise HTTPException(404, "Purchase order not found")
+    if obj.status != "PENDING_APPROVAL": raise HTTPException(409, "Only pending purchase orders can be rejected")
     obj.status = "REJECTED"; session.commit(); session.refresh(obj)
     return {"id": obj.id, "status": obj.status, "message": "Purchase order rejected"}
 
