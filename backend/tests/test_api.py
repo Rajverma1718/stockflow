@@ -53,6 +53,8 @@ def test_purchase_order_line_and_receiving_flow():
     assert blocked.status_code == 409
     approved = client.patch(f"/api/purchase-orders/{po.json()['id']}/approve", headers=headers)
     assert approved.status_code == 200
+    logs = client.get("/api/audit-logs", headers=headers)
+    assert any(log["action"] == "APPROVE" and log["entity_id"] == str(po.json()["id"]) for log in logs.json())
     rejected_after_approval = client.patch(f"/api/purchase-orders/{po.json()['id']}/reject", headers=headers)
     assert rejected_after_approval.status_code == 409
     late_item = client.post(f"/api/purchase-orders/{po.json()['id']}/items", json={"product_id": 1, "quantity": 1, "unit_cost": 10}, headers=headers)

@@ -245,20 +245,20 @@ def create_po(item: POIn, authorization: Optional[str] = Header(None), session: 
 
 @app.patch("/api/purchase-orders/{po_id}/approve")
 def approve_po(po_id: int, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
-    require_role({"ADMIN", "MANAGER"}, authorization, session)
+    user = require_role({"ADMIN", "MANAGER"}, authorization, session)
     obj = session.get(PurchaseOrder, po_id)
     if not obj: raise HTTPException(404, "Purchase order not found")
     if obj.status != "PENDING_APPROVAL": raise HTTPException(409, "Only pending purchase orders can be approved")
-    obj.status = "APPROVED"; session.commit(); session.refresh(obj)
+    obj.status = "APPROVED"; audit(session, user, "APPROVE", "PurchaseOrder", str(po_id)); session.commit(); session.refresh(obj)
     return {"id": obj.id, "status": obj.status, "message": "Purchase order approved"}
 
 @app.patch("/api/purchase-orders/{po_id}/reject")
 def reject_po(po_id: int, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
-    require_role({"ADMIN", "MANAGER"}, authorization, session)
+    user = require_role({"ADMIN", "MANAGER"}, authorization, session)
     obj = session.get(PurchaseOrder, po_id)
     if not obj: raise HTTPException(404, "Purchase order not found")
     if obj.status != "PENDING_APPROVAL": raise HTTPException(409, "Only pending purchase orders can be rejected")
-    obj.status = "REJECTED"; session.commit(); session.refresh(obj)
+    obj.status = "REJECTED"; audit(session, user, "REJECT", "PurchaseOrder", str(po_id)); session.commit(); session.refresh(obj)
     return {"id": obj.id, "status": obj.status, "message": "Purchase order rejected"}
 
 @app.get("/api/forecast/{product_id}")
