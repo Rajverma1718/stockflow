@@ -249,6 +249,8 @@ def approve_po(po_id: int, authorization: Optional[str] = Header(None), session:
     obj = session.get(PurchaseOrder, po_id)
     if not obj: raise HTTPException(404, "Purchase order not found")
     if obj.status != "PENDING_APPROVAL": raise HTTPException(409, "Only pending purchase orders can be approved")
+    if not session.scalar(select(PurchaseOrderItem.id).where(PurchaseOrderItem.purchase_order_id == po_id).limit(1)):
+        raise HTTPException(400, "Purchase order must contain at least one item before approval")
     obj.status = "APPROVED"; audit(session, user, "APPROVE", "PurchaseOrder", str(po_id)); session.commit(); session.refresh(obj)
     return {"id": obj.id, "status": obj.status, "message": "Purchase order approved"}
 

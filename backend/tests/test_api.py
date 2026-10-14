@@ -45,6 +45,10 @@ def test_protected_category_and_transfer_flow():
 def test_purchase_order_line_and_receiving_flow():
     login = client.post("/api/auth/login", json={"email": "test-admin@example.com", "password": "correct horse"})
     headers = {"Authorization": f"Bearer {login.json()['token']}"}
+    empty_order = client.post("/api/purchase-orders", json={"supplier_id": 1, "warehouse_id": 1, "total": 1}, headers=headers)
+    assert empty_order.status_code == 200
+    empty_approval = client.patch(f"/api/purchase-orders/{empty_order.json()['id']}/approve", headers=headers)
+    assert empty_approval.status_code == 400
     po = client.post("/api/purchase-orders", json={"supplier_id": 1, "warehouse_id": 1, "total": 1}, headers=headers)
     assert po.status_code == 200
     line = client.post(f"/api/purchase-orders/{po.json()['id']}/items", json={"product_id": 1, "quantity": 2, "unit_cost": 10}, headers=headers)
