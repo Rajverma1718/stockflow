@@ -34,6 +34,10 @@ def test_protected_category_and_transfer_flow():
     login = client.post("/api/auth/login", json={"email": "test-admin@example.com", "password": "correct horse"})
     token = login.json()["token"]
     headers = {"Authorization": f"Bearer {token}"}
+    duplicate_product = client.post("/api/products", json={"sku": "SKU-1001", "name": "Duplicate scanner", "category": "Hardware", "reorder_point": 5, "unit_cost": 1}, headers=headers)
+    assert duplicate_product.status_code == 409
+    duplicate_sku = client.patch("/api/products/2", json={"sku": "SKU-1001", "name": "Thermal Labels", "category": "Consumables", "reorder_point": 100, "unit_cost": 0.12}, headers=headers)
+    assert duplicate_sku.status_code == 409
     category = client.post("/api/categories", json={"name": "Test Category"}, headers=headers)
     assert category.status_code in (200, 409)
     transfer = client.post("/api/transfers", json={"product_id": 1, "from_warehouse_id": 1, "to_warehouse_id": 2, "quantity": 1}, headers=headers)

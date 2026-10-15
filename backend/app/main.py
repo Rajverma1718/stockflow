@@ -183,12 +183,16 @@ def inventory(session: Session = Depends(db)):
 @app.post("/api/products")
 def create_product(item: ProductIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     require_role({"ADMIN", "MANAGER"}, authorization, session)
+    if session.scalar(select(Product).where(Product.sku == item.sku)):
+        raise HTTPException(409, "A product with this SKU already exists")
     obj = Product(**item.model_dump()); session.add(obj); session.commit(); session.refresh(obj); return obj
 
 @app.patch("/api/products/{product_id}")
 def update_product(product_id: int, item: ProductPatchIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     user = require_role({"ADMIN", "MANAGER"}, authorization, session); obj = session.get(Product, product_id)
     if not obj: raise HTTPException(404, "Product not found")
+    if session.scalar(select(Product).where(Product.sku == item.sku, Product.id != product_id)):
+        raise HTTPException(409, "A product with this SKU already exists")
     obj.sku, obj.name, obj.category, obj.reorder_point, obj.unit_cost = item.sku, item.name, item.category, item.reorder_point, item.unit_cost
     audit(session, user, "UPDATE", "Product", str(product_id)); session.commit(); session.refresh(obj); return obj
 
