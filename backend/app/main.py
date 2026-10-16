@@ -426,7 +426,7 @@ def transfer_stock(item: TransferIn, authorization: Optional[str] = Header(None)
     target = session.scalar(select(StockLevel).where(StockLevel.product_id == item.product_id, StockLevel.warehouse_id == item.to_warehouse_id))
     if not target: target = StockLevel(product_id=item.product_id, warehouse_id=item.to_warehouse_id, quantity=0, reserved=0); session.add(target); session.flush()
     source.quantity -= item.quantity; target.quantity += item.quantity
-    transfer = StockTransfer(**item.model_dump()); session.add(transfer)
+    transfer = StockTransfer(**item.model_dump()); session.add(transfer); session.flush()
     session.add_all([InventoryTransaction(product_id=item.product_id, warehouse_id=item.from_warehouse_id, transaction_type="TRANSFER_OUT", quantity=-item.quantity, reference="TRANSFER"), InventoryTransaction(product_id=item.product_id, warehouse_id=item.to_warehouse_id, transaction_type="TRANSFER_IN", quantity=item.quantity, reference="TRANSFER")])
     audit(session, user, "TRANSFER", "StockTransfer", str(transfer.id)); session.commit(); session.refresh(transfer); return {"id": transfer.id, "status": transfer.status}
 

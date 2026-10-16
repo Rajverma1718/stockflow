@@ -42,6 +42,8 @@ def test_protected_category_and_transfer_flow():
     assert category.status_code in (200, 409)
     transfer = client.post("/api/transfers", json={"product_id": 1, "from_warehouse_id": 1, "to_warehouse_id": 2, "quantity": 1}, headers=headers)
     assert transfer.status_code == 200
+    logs = client.get("/api/audit-logs", headers=headers)
+    assert any(log["action"] == "TRANSFER" and log["entity_id"] == str(transfer.json()["id"]) for log in logs.json())
     alerts = client.post("/api/alerts/generate")
     assert alerts.status_code == 200
     assert "created" in alerts.json()
