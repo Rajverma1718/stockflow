@@ -149,7 +149,7 @@ class ProductPatchIn(BaseModel): sku: str; name: str; category: str; reorder_poi
 class StockIn(BaseModel): product_id: int; warehouse_id: int; quantity: int; reserved: int = 0
 class DemandIn(BaseModel): product_id: int; warehouse_id: int; units: int
 class SupplierIn(BaseModel): name: str; email: str; lead_time_days: int = 7
-class POIn(BaseModel): supplier_id: int; warehouse_id: int; total: float
+class POIn(BaseModel): supplier_id: int; warehouse_id: int
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "stockflow-api"}
@@ -243,9 +243,8 @@ def purchase_orders(session: Session = Depends(db)):
 @app.post("/api/purchase-orders")
 def create_po(item: POIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     require_role({"ADMIN", "PROCUREMENT"}, authorization, session)
-    if item.total <= 0: raise HTTPException(400, "Purchase order total must be greater than zero")
     if not session.get(Supplier, item.supplier_id) or not session.get(Warehouse, item.warehouse_id): raise HTTPException(404, "Supplier or warehouse not found")
-    obj = PurchaseOrder(**item.model_dump()); session.add(obj); session.commit(); session.refresh(obj); return obj
+    obj = PurchaseOrder(supplier_id=item.supplier_id, warehouse_id=item.warehouse_id, total=0); session.add(obj); session.commit(); session.refresh(obj); return obj
 
 @app.patch("/api/purchase-orders/{po_id}/approve")
 def approve_po(po_id: int, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
@@ -471,4 +470,3 @@ def generate_alerts(session: Session = Depends(db)):
 def audit_logs(authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     require_role({"ADMIN", "MANAGER"}, authorization, session)
     return session.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(200)).all()
-
