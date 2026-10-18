@@ -75,3 +75,18 @@ def test_purchase_order_line_and_receiving_flow():
     received = client.post(f"/api/purchase-orders/{po.json()['id']}/receive", json={"item_id": line.json()["id"], "quantity": 2}, headers=headers)
     assert received.status_code == 200
     assert received.json()["status"] == "RECEIVED"
+
+    inventory_before = client.get("/api/inventory").json()
+    same_warehouse = client.post(
+        "/api/transfers",
+        json={"product_id": 1, "from_warehouse_id": 1, "to_warehouse_id": 1, "quantity": 1},
+        headers=headers,
+    )
+    zero_quantity = client.post(
+        "/api/transfers",
+        json={"product_id": 1, "from_warehouse_id": 1, "to_warehouse_id": 2, "quantity": 0},
+        headers=headers,
+    )
+    assert same_warehouse.status_code == 400
+    assert zero_quantity.status_code == 400
+    assert client.get("/api/inventory").json() == inventory_before
