@@ -90,3 +90,8 @@ def test_purchase_order_line_and_receiving_flow():
     assert same_warehouse.status_code == 400
     assert zero_quantity.status_code == 400
     assert client.get("/api/inventory").json() == inventory_before
+
+
+def test_auth_me_rejects_missing_or_invalid_token():
+    assert client.get("/api/auth/me").status_code == 401
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer invalid"}).status_code == 401
