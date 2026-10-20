@@ -72,6 +72,10 @@ def test_purchase_order_line_and_receiving_flow():
     assert rejected_after_approval.status_code == 409
     late_item = client.post(f"/api/purchase-orders/{po.json()['id']}/items", json={"product_id": 1, "quantity": 1, "unit_cost": 10}, headers=headers)
     assert late_item.status_code == 409
+    inventory_before_over_receipt = client.get("/api/inventory").json()
+    over_receipt = client.post(f"/api/purchase-orders/{po.json()['id']}/receive", json={"item_id": line.json()["id"], "quantity": 3}, headers=headers)
+    assert over_receipt.status_code == 400
+    assert client.get("/api/inventory").json() == inventory_before_over_receipt
     received = client.post(f"/api/purchase-orders/{po.json()['id']}/receive", json={"item_id": line.json()["id"], "quantity": 2}, headers=headers)
     assert received.status_code == 200
     assert received.json()["status"] == "RECEIVED"
