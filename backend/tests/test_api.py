@@ -5,7 +5,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test_stockflow.db"
 if os.path.exists("test_stockflow.db"):
     os.remove("test_stockflow.db")
 from fastapi.testclient import TestClient
-from app.main import app
+from app.main import SessionLocal, User, app, password_hash
 
 client = TestClient(app)
 
@@ -99,3 +99,24 @@ def test_purchase_order_line_and_receiving_flow():
 def test_auth_me_rejects_missing_or_invalid_token():
     assert client.get("/api/auth/me").status_code == 401
     assert client.get("/api/auth/me", headers={"Authorization": "Bearer invalid"}).status_code == 401
+
+
+def test_inactive_user_cannot_login():
+    session = SessionLocal()
+    user = User(
+        email="inactive@example.com",
+        name="Inactive User",
+        password_hash=password_hash("correct horse"),
+        role="VIEWER",
+        active=False,
+    )
+    session.add(user)
+    session.commit()
+    session.close()
+
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "inactive@example.com", "password": "correct horse"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid email or password"

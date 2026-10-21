@@ -361,7 +361,7 @@ def register(item: AuthIn, authorization: Optional[str] = Header(None), session:
 @app.post("/api/auth/login")
 def login(item: AuthIn, session: Session = Depends(db)):
     user = session.scalar(select(User).where(User.email == item.email.lower()))
-    if not user or not password_ok(item.password, user.password_hash): raise HTTPException(401, "Invalid email or password")
+    if not user or not user.active or not password_ok(item.password, user.password_hash): raise HTTPException(401, "Invalid email or password")
     return {"id": user.id, "email": user.email, "name": user.name, "role": user.role, "token": make_token(user)}
 
 @app.get("/api/auth/me")
