@@ -420,6 +420,7 @@ def receive_po(po_id: int, item: ReceiveIn, authorization: Optional[str] = Heade
 def transfer_stock(item: TransferIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     user = require_role({"ADMIN", "MANAGER"}, authorization, session)
     if item.quantity <= 0 or item.from_warehouse_id == item.to_warehouse_id: raise HTTPException(400, "Invalid transfer")
+    if not session.get(Product, item.product_id) or not session.get(Warehouse, item.from_warehouse_id) or not session.get(Warehouse, item.to_warehouse_id): raise HTTPException(404, "Product or warehouse not found")
     source = session.scalar(select(StockLevel).where(StockLevel.product_id == item.product_id, StockLevel.warehouse_id == item.from_warehouse_id))
     if not source or source.quantity - source.reserved < item.quantity: raise HTTPException(400, "Insufficient available stock")
     target = session.scalar(select(StockLevel).where(StockLevel.product_id == item.product_id, StockLevel.warehouse_id == item.to_warehouse_id))

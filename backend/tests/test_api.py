@@ -95,6 +95,14 @@ def test_purchase_order_line_and_receiving_flow():
     assert zero_quantity.status_code == 400
     assert client.get("/api/inventory").json() == inventory_before
 
+    invalid_destination = client.post(
+        "/api/transfers",
+        json={"product_id": 1, "from_warehouse_id": 1, "to_warehouse_id": 9999, "quantity": 1},
+        headers=headers,
+    )
+    assert invalid_destination.status_code == 404
+    assert client.get("/api/inventory").json() == inventory_before
+
 
 def test_auth_me_rejects_missing_or_invalid_token():
     assert client.get("/api/auth/me").status_code == 401
