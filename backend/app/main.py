@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Field
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, sessionmaker
 
@@ -144,8 +144,8 @@ def db():
     finally: session.close()
 
 class WarehouseIn(BaseModel): name: str; location: str
-class ProductIn(BaseModel): sku: str; name: str; category: str; reorder_point: int = 10; unit_cost: float = 0
-class ProductPatchIn(BaseModel): sku: str; name: str; category: str; reorder_point: int = 10; unit_cost: float = 0
+class ProductIn(BaseModel): sku: str; name: str; category: str; reorder_point: int = Field(default=10, ge=0); unit_cost: float = Field(default=0, ge=0)
+class ProductPatchIn(BaseModel): sku: str; name: str; category: str; reorder_point: int = Field(default=10, ge=0); unit_cost: float = Field(default=0, ge=0)
 class StockIn(BaseModel): product_id: int; warehouse_id: int; quantity: int; reserved: int = 0
 class DemandIn(BaseModel): product_id: int; warehouse_id: int; units: int
 class SupplierIn(BaseModel): name: str; email: str; lead_time_days: int = 7
