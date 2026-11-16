@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta
-import base64, hashlib, hmac, json, secrets, smtplib
+import base64, binascii, hashlib, hmac, json, secrets, smtplib
 import os
 from typing import Optional
 
@@ -335,7 +335,7 @@ def current_user(authorization: Optional[str], session: Session) -> Optional[Use
         if data["exp"] < int(datetime.utcnow().timestamp()): return None
         user = session.get(User, int(data["id"]))
         return user if user and user.active else None
-    except (ValueError, KeyError, json.JSONDecodeError): return None
+    except (ValueError, KeyError, UnicodeDecodeError, binascii.Error, json.JSONDecodeError): return None
 
 def require_role(roles: set[str], authorization: Optional[str], session: Session) -> Optional[User]:
     user = current_user(authorization, session)
