@@ -375,7 +375,15 @@ def categories(session: Session = Depends(db)): return session.scalars(select(Ca
 
 @app.post("/api/categories")
 def create_category(item: CategoryIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
-    user = require_role({"ADMIN", "MANAGER"}, authorization, session); obj = Category(**item.model_dump()); session.add(obj); audit(session, user, "CREATE", "Category", item.name); session.commit(); session.refresh(obj); return obj
+    user = require_role({"ADMIN", "MANAGER"}, authorization, session)
+    if session.scalar(select(Category).where(Category.name == item.name)):
+        raise HTTPException(409, "A category with this name already exists")
+    obj = Category(**item.model_dump())
+    session.add(obj)
+    audit(session, user, "CREATE", "Category", item.name)
+    session.commit()
+    session.refresh(obj)
+    return obj
 
 @app.patch("/api/categories/{category_id}")
 def update_category(category_id: int, item: CategoryIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
