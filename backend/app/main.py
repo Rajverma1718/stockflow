@@ -389,6 +389,8 @@ def create_category(item: CategoryIn, authorization: Optional[str] = Header(None
 def update_category(category_id: int, item: CategoryIn, authorization: Optional[str] = Header(None), session: Session = Depends(db)):
     user = require_role({"ADMIN", "MANAGER"}, authorization, session); obj = session.get(Category, category_id)
     if not obj: raise HTTPException(404, "Category not found")
+    duplicate = session.scalar(select(Category).where(Category.name == item.name, Category.id != category_id))
+    if duplicate: raise HTTPException(409, "A category with this name already exists")
     obj.name, obj.description = item.name, item.description; audit(session, user, "UPDATE", "Category", str(category_id)); session.commit(); return obj
 
 @app.delete("/api/categories/{category_id}")
